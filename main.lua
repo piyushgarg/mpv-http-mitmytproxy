@@ -5,8 +5,13 @@ local function init()
     end
 
     local url = mp.get_property("stream-open-filename")
+    print("url -> " .. url)
+
+    -- check for youtube playlist link
+    local pattern = "https://www%.youtube%.com/playlist%?list%="
+
     -- check for youtube link
-    if url:find("^https:") == nil or (url:find("youtu") == nil and url:find("yewtu") == nil) then
+    if url:find("^https:") == nil or (url:find("youtu") == nil and url:find("yewtu") == nil) or string.match(url, pattern) then
         return
     end
 
@@ -18,12 +23,15 @@ local function init()
     end
 
     print("starting mitmproxy...")
-    -- launch mitm proxy
+    math.randomseed(os.time())
+    local proxyport = math.random(12000, 13000)
+    -- print("A random number between 12000 and 13000 is: " .. proxyport)
+    -- launch mitmproxy
     local args = {
         os.getenv("HOME") .. "/venv/bin/mitmdump",
         "-s", mp.get_script_directory() .. "/mitmplugin.py",
         "--set", "web_open_browser=false",
-        "--mode", "regular@12081", -- proxy port
+        "--mode", "regular@" .. proxyport, -- proxy port
     }
     mp.command_native_async({
             name = "subprocess",
@@ -33,8 +41,8 @@ local function init()
             args = args,
     });
 
-    mp.set_property("http-proxy", "http://127.0.0.1:12081")
-    mp.set_property("tls-verify", "no")
+    mp.set_property("file-local-options/http-proxy", "http://127.0.0.1:" .. proxyport)
+    mp.set_property("file-local-options/tls-verify", "no")
     -- this is not really needed
 end
 
